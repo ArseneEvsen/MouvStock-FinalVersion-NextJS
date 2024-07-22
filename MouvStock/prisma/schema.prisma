@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// IF THE APP RUN ON WINDOWS :
+//generator client {
+//  provider = "prisma-client-js"
+//}
+
+// IF THE APP RUN ON LINUX :
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum State {
+  Faible
+  Normal
+}
+
+model Brand {
+  name     String    @id // Champ 'name'
+  products Product[] @relation // Relation avec 'Products'
+
+  @@map("brand") // Nom de la table dans la base de données
+}
+
+model Category {
+  name     String    @id
+  products Product[] @relation // Relation avec 'Products'
+
+  @@map("category") // Nom de la table dans la base de données
+}
+
+model BatchProduct {
+  name      String
+  productId String
+  barecode  String  @id
+  price     Float
+  quantity  Int
+  image     String?
+
+  product Product @relation(fields: [productId], references: [barecode])
+}
+
+model Product {
+  barecode     String   @id
+  name         String
+  brandName    String
+  categoryName String
+  brand        Brand    @relation(fields: [brandName], references: [name]) // Relation avec 'Brand'
+  category     Category @relation(fields: [categoryName], references: [name]) // Relation avec 'Category'
+  price        Float
+  stock        Int?     @default(0)
+  stockLimit   Int?     @default(20)
+  state        State?
+  image        String?
+
+  BatchProduct BatchProduct[]
+  sales        Sale[] // Relation avec Sale
+
+  @@map("product")
+}
+
+model Sale {
+  id        Int      @id @default(autoincrement())
+  productId String
+  quantity  Int
+  date      DateTime
+  price     Float
+
+  product Product @relation(fields: [productId], references: [barecode])
+
+  @@map("sale")
+}
