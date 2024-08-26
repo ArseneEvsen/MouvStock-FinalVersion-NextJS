@@ -35,7 +35,39 @@ Une fois que les images ont bien été créées et les conteneurs docker instanc
 ```
 	docker-compose exec mouvstock npx prisma migrate dev --name init
 ```
+## Etape 3 : Intégrez l'event "alerte stock bas" via mysqlworkbench
 
-## Etape 3 : créez des catégories, des marques et des articles
+L'event côté base de données qui permet de vérifier si le stock d'un article est bas n'est pas encore intégré par défaut, pour l'intégrer veuillez à partir d'un client mysql (exemple : mysqlWorkbench) vous connecter au container mysql, dans un premier temps.
+
+Ensuite, vérifiez que le scheduler est bien activé avec la ligne suivante :
+```
+	SHOW VARIABLES LIKE 'event_scheduler';
+```
+
+Pour l'activer : 
+```
+	SET GLOBAL event_scheduler = ON;
+```
+
+Voici le code pour créer l'event en base de données :
+```
+USE mouvstockdb;
+DELIMITER //
+
+CREATE EVENT UpdateProductStatesEvent
+ON SCHEDULE EVERY 1 MINUTE
+DO
+BEGIN
+    UPDATE product
+    SET state = CASE
+        WHEN stock <= stockLimit THEN 'Faible'
+        ELSE 'Normal'
+    END;
+END //
+
+DELIMITER ;
+```
+
+## Etape 4 : créez des catégories, des marques et des articles
 
 Rendez-vous sur la page http://localhost:3000 et à l'aide du menu, découvrez les pages qui vous permettront de créer d'abord des catégories et des marques, pour ensuite créer des articles.
